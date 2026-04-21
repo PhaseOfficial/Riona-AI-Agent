@@ -160,7 +160,8 @@ async function interactWithPosts(page: any) {
             const commentBox = await page.$(commentBoxSelector);
             if (commentBox) {
                 console.log(`Commenting on post ${postIndex}...`);
-                const prompt = `Craft a thoughtful, engaging, and mature reply to the following post: "${caption}". Ensure the reply is relevant, insightful, and adds value to the conversation. It should reflect empathy and professionalism, and avoid sounding too casual or superficial. also it should be 300 characters or less. and it should not go against instagram Community Standards on spam. so you will have to try your best to humanize the reply`;
+                const prompt = `Write a fun, short, and smart comment (max 100 characters) for this post: "${caption}". Keep it playful and human, use simple words, maybe a joke or light teasing. Avoid anything offensive or something that would be labeled as spam. if it is about death or accidents or anything sensitive or political, do not comment. Think like a witty friend dropping a gem in the comments. Dont describe emojis if there is no text just emojis or no comment don't comment`;
+                //const prompt = `Write a funny, short comment (max 100 characters) for this meme: "${caption}". Make it feel human and relatable—like something a witty 23-year-old would say. Keep the vibe playful, maybe add light sarcasm or a smart twist. Avoid anything offensive, spammy, or too deep. Just a quick laugh or reaction.`;
                 const schema = getInstagramCommentSchema();
                 const result = await runAgent(schema, prompt);
                 const comment = result[0]?.comment;

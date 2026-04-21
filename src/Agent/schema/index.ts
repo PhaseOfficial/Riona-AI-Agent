@@ -37,7 +37,7 @@ export const getInstagramCommentSchema = (): InstagramCommentSchema => {
             properties: {
                 comment: {
                     type: SchemaType.STRING,
-                    description: "A comment between 150 and 250 characters.",
+                    description: "A comment between 20 and 50 characters.",
                     nullable: false,
                 },
                 viralRate: {
