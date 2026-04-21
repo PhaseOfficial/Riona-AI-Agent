@@ -1,5 +1,4 @@
-import { GoogleAIFileManager, FileState } from "@google/generative-ai/server";
-import { GoogleGenerativeAI } from "@google/generative-ai";
+import { GoogleGenAI, createPartFromUri, createUserContent } from "@google/genai";
 import dotenv from "dotenv";
 import path from "path";
 import fs from "fs";
@@ -12,7 +11,7 @@ if (!apiKey) {
   throw new Error("API key is missing");
 }
 
-const fileManager = new GoogleAIFileManager(apiKey);
+const ai = new GoogleGenAI({ apiKey });
 
 // Function to upload, process, and delete the audio file with support for various formats
 const processAudioFile = async (fileName: string): Promise<void> => {
@@ -32,51 +31,55 @@ const processAudioFile = async (fileName: string): Promise<void> => {
     }
 
     // Upload the audio file with the correct MIME type
-    const uploadResult = await fileManager.uploadFile(filePath, {
-      mimeType: mimeType,
-      displayName: "Audio sample",
-    });
-
-    let file = await fileManager.getFile(uploadResult.file.name);
-
-    // Wait for the audio file to be processed
-    while (file.state === FileState.PROCESSING) {
-      process.stdout.write(".");
-      // Sleep for 10 seconds
-      await new Promise((resolve) => setTimeout(resolve, 10_000));
-      // Fetch the file from the API again
-      file = await fileManager.getFile(uploadResult.file.name);
+    const maxMb = Number(process.env.TRAIN_MAX_FILE_MB || 10);
+    const dryRun = (process.env.TRAIN_DRY_RUN || 'false').toLowerCase() === 'true';
+    const stat = fs.statSync(filePath);
+    if (stat.size > maxMb * 1024 * 1024) {
+      throw new Error(`File exceeds max size of ${maxMb}MB`);
+    }
+    if (dryRun) {
+      console.log(`DRY_RUN: would upload ${fileName} (${stat.size} bytes)`);
+      return;
     }
 
-    if (file.state === FileState.FAILED) {
-      throw new Error("Audio processing failed.");
+    let file = await ai.files.upload({
+      file: filePath,
+      config: { mimeType: mimeType, displayName: "Audio sample" },
+    });
+
+    // Wait for the audio file to be processed (ACTIVE)
+    while (file.state && file.state.toString() !== "ACTIVE") {
+      process.stdout.write(".");
+      await new Promise((resolve) => setTimeout(resolve, 10_000));
+      if (!file.name) {
+        throw new Error("Uploaded file is missing a name.");
+      }
+      file = await ai.files.get({ name: file.name });
     }
 
     // Log the uploaded file URI
-    console.log(
-      `Uploaded file ${uploadResult.file.displayName} as: ${uploadResult.file.uri}`
-    );
+    if (!file.uri || !file.mimeType) {
+      throw new Error("Uploaded file metadata is incomplete.");
+    }
 
-    // Generate content using Gemini
-    const genAI = new GoogleGenerativeAI(apiKey);
-    const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
+    console.log(`Uploaded file ${file.displayName || file.name} as: ${file.uri}`);
 
-    const result = await model.generateContent([
-      "Generate a transcript of the audio.",
-      {
-        fileData: {
-          fileUri: uploadResult.file.uri,
-          mimeType: uploadResult.file.mimeType,
-        },
-      },
-    ]);
+    const result = await ai.models.generateContent({
+      model: "gemini-1.5-flash",
+      contents: createUserContent([
+        createPartFromUri(file.uri, file.mimeType),
+        "Generate a transcript of the audio.",
+      ]),
+    });
 
     // Log the response
-    console.log(result.response.text());
+    console.log(result.text);
 
-    // Delete the uploaded file after processing
-    await fileManager.deleteFile(uploadResult.file.name);
-    console.log(`Deleted ${uploadResult.file.displayName}`);
+    if (!file.name) {
+      throw new Error("Uploaded file is missing a name for deletion.");
+    }
+    await ai.files.delete({ name: file.name });
+    console.log(`Deleted ${file.displayName || file.name}`);
 
   } catch (error) {
     console.error("Error processing audio file:", error);

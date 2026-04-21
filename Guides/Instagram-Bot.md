@@ -23,6 +23,38 @@ Before running the bot, ensure the project has the following structure and files
   ```env
   IGusername=your_instagram_username
   IGpassword=your_instagram_password
+  MONGODB_URI=mongodb://localhost:27017/instagram-ai-agent
+  MONGODB_REQUIRED=false
+
+  # Optional: locale-specific ad/sponsored markers (comma-separated)
+  IG_AD_MARKERS=sponsored,paid partnership,paid partnership with
+  IG_AD_BUTTON_MARKERS=learn more,shop now,sign up,install now,get offer,subscribe,book now
+
+  # Optional: run Instagram agent loop automatically
+  IG_AGENT_ENABLED=false
+  IG_AGENT_INTERVAL_MS=30000
+
+  # Optional: daily limit for IG actions (likes/comments). 0 = unlimited
+  IG_DAILY_MAX_ACTIONS=0
+
+  # Optional: logging backend ("winston" or "console")
+  LOGGER=console
+  
+  # Gemini API keys (set only the ones you use)
+  GEMINI_API_KEY=your_primary_gemini_api_key
+  GEMINI_API_KEY_1=your_gemini_api_key_1
+  GEMINI_API_KEY_2=your_gemini_api_key_2
+
+## Posting
+
+- Use `/api/post-photo` with a public image URL and caption.
+- Use `/api/schedule-post` with a cron expression.
+
+## Troubleshooting
+
+- If the server starts but no IG actions run, set `IG_AGENT_ENABLED=true` or use `/api/login` + `/api/interact`.
+- If cookie JSON is corrupted, delete it or let the app auto-backup and re-login.
+- If IG shows a challenge screen, login manually once and re-run the agent.
   ```
 - Ensure `src/secret/index.ts` exports these credentials correctly.
 

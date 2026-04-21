@@ -8,11 +8,12 @@ interface IInstagramClient {
     ig: IgApiClient;
     login(): Promise<void>;
     postPhoto(url: string, caption?: string): Promise<MediaRepositoryConfigureResponseRootObject>;
+    postPhotoBuffer(buffer: Buffer, caption?: string): Promise<MediaRepositoryConfigureResponseRootObject>;
     schedulePost(url: string, caption: string, cronTime: string): Promise<void>;
 }
 
 // InstagramClient Class
-class InstagramClient implements IInstagramClient {
+export class InstagramClient implements IInstagramClient {
     username: string;
     password: string;
     ig: IgApiClient;
@@ -54,6 +55,19 @@ class InstagramClient implements IInstagramClient {
         return response;
     }
 
+    async postPhotoBuffer(buffer: Buffer, caption: string = ''): Promise<MediaRepositoryConfigureResponseRootObject> {
+        if (!buffer || buffer.length === 0) {
+            throw new Error("Image buffer is required.");
+        }
+        console.log("Uploading photo from buffer...");
+        const response = await this.ig.publish.photo({
+            file: buffer,
+            caption,
+        });
+        console.log("Photo posted successfully!");
+        return response;
+    }
+
     async schedulePost(url: string, caption: string, cronTime: string): Promise<void> {
         if (!url || !cronTime) {
             throw new Error("Image URL and cron time are required.");
@@ -72,35 +86,3 @@ class InstagramClient implements IInstagramClient {
         console.log("Cron job started.");
     }
 }
-
-// Usage Example
-(async () => {
-    const username = process.env.IG_USERNAME; // Set your Instagram username in environment variables
-    const password = process.env.IG_PASSWORD; // Set your Instagram password in environment variables
-
-    if (!username || !password) {
-        console.error("Please set IG_USERNAME and IG_PASSWORD in environment variables.");
-        return;
-    }
-
-    const client = new InstagramClient(username, password);
-
-    try {
-        await client.login();
-
-        // Post immediately
-        await client.postPhoto(
-            'https://i.imgur.com/BZBHsauh.jpg',
-            'Really nice photo from the internet!'
-        );
-
-        // Schedule a post
-        await client.schedulePost(
-            'https://i.imgur.com/BZBHsauh.jpg',
-            'Scheduled post with a great view!',
-            '0 9 * * *' // Cron time: Every day at 9 AM
-        );
-    } catch (error) {
-        console.error("Error:", (error as Error).message);
-    }
-})();

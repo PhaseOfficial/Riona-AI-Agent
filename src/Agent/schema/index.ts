@@ -1,32 +1,14 @@
-import { SchemaType } from "@google/generative-ai";
-import mongoose, { Document, Schema, Model } from 'mongoose';
+type JsonSchema = {
+  description?: string;
+  type: "string" | "number" | "integer" | "boolean" | "array" | "object";
+  nullable?: boolean;
+  items?: JsonSchema;
+  properties?: Record<string, JsonSchema>;
+  required?: string[];
+};
+import mongoose, { Document, Schema, Model } from "mongoose";
 
-
-export interface InstagramCommentSchema {
-    description: string;
-    type: SchemaType;
-    items: {
-        type: SchemaType;
-        properties: {
-            comment: {
-                type: SchemaType;
-                description: string;
-                nullable: boolean;
-            };
-            viralRate: {
-                type: SchemaType;
-                description: string;
-                nullable: boolean;
-            };
-            commentTokenCount: {
-                type: SchemaType;
-                description: string;
-                nullable: boolean;
-            };
-        };
-        required: string[];
-    };
-}
+export type InstagramCommentSchema = JsonSchema;
 
 export const getInstagramCommentSchema = (): InstagramCommentSchema => {
     return {
@@ -77,6 +59,6 @@ const tweetSchema: Schema<ITweet> = new Schema({
 });
 
 // Create the model for the Tweet document
-const Tweet: Model<ITweet> = mongoose.model<ITweet>('Tweet', tweetSchema);
+const Tweet: Model<ITweet> = mongoose.model<ITweet>("Tweet", tweetSchema);
 
 export default Tweet;
